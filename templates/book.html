@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book['title'] }} - BookTracker{% endblock %}
+
+{% block content %}
+    <div class="book-detail">
+        <div class="book-cover">
+            <img src="{{ book['cover_image'] or 'https://via.placeholder.com/300x400' }}" alt="{{ book['title'] }}">
+        </div>
+        <div class="book-info">
+            <h1>{{ book['title'] }}</h1>
+            <h2>by {{ book['author'] }}</h2>
+
+            <div class="book-stats">
+                <span><i class="fas fa-heart"></i> {{ likes_count }} likes</span>
+                <span><i class="fas fa-star"></i> {{ book['average_rating'] or '0.0' }} avg rating</span>
+            </div>
+
+            {% if 'user_id' in session %}
+                <div class="book-actions">
+                    <form method="POST" action="{{ url_for('add_to_collection', book_id=book['id']) }}">
+                        <select name="status" required>
+                            <option value="">Add to shelf...</option>
+                            <option value="want_to_read" {% if user_status == 'want_to_read' %}selected{% endif %}>Want to Read</option>
+                            <option value="currently_reading" {% if user_status == 'currently_reading' %}selected{% endif %}>Currently Reading</option>
+                            <option value="read" {% if user_status == 'read' %}selected{% endif %}>Read</option>
+                        </select>
+
+                        {% if user_status == 'read' %}
+                            <div class="rating-section">
+                                <label for="rating">Your Rating:</label>
+                                <select name="rating" id="rating">
+                                    <option value="">Rate this book</option>
+                                    {% for i in range(1, 6) %}
+                                        <option value="{{ i }}" {% if user_book and user_book['rating'] == i %}selected{% endif %}>{{ i }} star{% if i > 1 %}s{% endif %}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        {% endif %}
+
+                        <button type="submit" class="btn btn-primary">
+                            {% if user_status %}Update{% else %}Add{% endif %}
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{% if user_liked %}{{ url_for('unlike_book', book_id=book['id']) }}{% else %}{{ url_for('like_book', book_id=book['id']) }}{% endif %}">
+                        <button type="submit" class="btn btn-like {% if user_liked %}liked{% endif %}">
+                            <i class="fas fa-heart"></i> {% if user_liked %}Unlike{% else %}Like{% endif %}
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+
+            <div class="book-description">
+                <h3>Description</h3>
+                <p>{{ book['description'] or 'No description available.' }}</p>
+            </div>
+
+            <div class="book-meta">
+                {% if book['isbn'] %}
+                    <p><strong>ISBN:</strong> {{ book['isbn'] }}</p>
+                {% endif %}
+                {% if book['published_date'] %}
+                    <p><strong>Published:</strong> {{ book['published_date'] }}</p>
+                {% endif %}
+                {% if book['page_count'] %}
+                    <p><strong>Pages:</strong> {{ book['page_count'] }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    {% if 'user_id' in session and user_status == 'read' %}
+        <div class="section">
+            <h2>Your Review</h2>
+            <form method="POST" action="{{ url_for('add_to_collection', book_id=book['id']) }}">
+                <div class="form-group">
+                    <label for="review">Review:</label>
+                    <textarea name="review" id="review" rows="4">{{ user_book['review'] if user_book else '' }}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Update Review</button>
+            </form>
+        </div>
+    {% endif %}
+
+    <div class="section">
+        <h2>Community Reviews</h2>
+        {% if reviews %}
+            {% for review in reviews %}
+                <div class="review">
+                    <div class="review-header">
+                        <img src="{{ review['profile_picture'] or 'https://via.placeholder.com/50' }}" alt="{{ review['username'] }}" class="review-avatar">
+                        <div>
+                            <h4>{{ review['username'] }}</h4>
+                            <div class="review-rating">
+                                {% for i in range(1, 6) %}
+                                    <i class="fas fa-star{% if i > review['rating'] %}-o{% endif %}"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <p>{{ review['review'] }}</p>
+                    <small>Reviewed on {{ review['updated_at'] }}</small>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>No reviews yet. Be the first to review this book!</p>
+        {% endif %}
+    </div>
+{% endblock %}

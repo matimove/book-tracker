@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Book Tracker{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="{{ url_for('index') }}" class="navbar-brand">BookTracker</a>
+            <div class="navbar-menu">
+                {% if 'user_id' in session %}
+                    <a href="{{ url_for('search') }}" class="navbar-item"><i class="fas fa-search"></i> Search</a>
+                    <a href="{{ url_for('my_books') }}" class="navbar-item"><i class="fas fa-book"></i> My Books</a>
+                    <a href="{{ url_for('profile', username=session['username']) }}" class="navbar-item">
+                        <i class="fas fa-user"></i> {{ session['username'] }}
+                    </a>
+                    <a href="{{ url_for('logout') }}" class="navbar-item"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                {% else %}
+                    <a href="{{ url_for('search') }}" class="navbar-item"><i class="fas fa-search"></i> Search</a>
+                    <a href="{{ url_for('login') }}" class="navbar-item"><i class="fas fa-sign-in-alt"></i> Login</a>
+                    <a href="{{ url_for('register') }}" class="navbar-item"><i class="fas fa-user-plus"></i> Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>BookTracker</p>
+        </div>
+    </footer>
+</body>
+</html>
