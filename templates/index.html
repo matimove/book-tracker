@@ -38,38 +38,38 @@
         <div class="section">
             <h2>Popular Books</h2>
             <div class="book-grid">
-                {% for book in popular_books %}
-                    <div class="book-card">
-                        <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                            <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="{{ book['title'] }}">
-                            <h3>{{ book['title'] }}</h3>
-                            <p>{{ book['author'] }}</p>
-                            <div class="book-stats">
-                                <span><i class="fas fa-heart"></i> {{ book['like_count'] or 0 }}</span>
-                                <span><i class="fas fa-star"></i> {{ book['average_rating'] or '0.0' }}</span>
-                            </div>
-                        </a>
-                    </div>
-                {% endfor %}
+                {% if popular_books %}
+                    {% for book in popular_books %}
+                        <div class="book-card">
+                            <a href="{{ url_for('book_detail', book_id=book['id']) }}">
+                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="{{ book['title'] }}">
+                                <h3>{{ book['title'] }}</h3>
+                                <p>{{ book['author'] }}</p>
+                            </a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No popular books found.</p>
+                {% endif %}
             </div>
         </div>
 
         <div class="section">
             <h2>Recently Added</h2>
             <div class="book-grid">
-                {% for book in recent_books %}
-                    <div class="book-card">
-                        <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                            <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="{{ book['title'] }}">
-                            <h3>{{ book['title'] }}</h3>
-                            <p>{{ book['author'] }}</p>
-                            <div class="book-stats">
-                                <span><i class="fas fa-heart"></i> 0</span>
-                                <span><i class="fas fa-star"></i> {{ book['average_rating'] or '0.0' }}</span>
-                            </div>
-                        </a>
-                    </div>
-                {% endfor %}
+                {% if recent_books %}
+                    {% for book in recent_books %}
+                        <div class="book-card">
+                            <a href="{{ url_for('book_detail', book_id=book['id']) }}">
+                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="{{ book['title'] }}">
+                                <h3>{{ book['title'] }}</h3>
+                                <p>{{ book['author'] }}</p>
+                            </a>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No recently added books found.</p>
+                {% endif %}
             </div>
         </div>
     {% endif %}

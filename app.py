@@ -30,32 +30,15 @@ init_db()
 def index():
     if 'user_id' in session:
         conn = get_db_connection()
-        # Get user's books
-        user_books = conn.execute('''
-            SELECT b.*, ub.status
-            FROM user_books ub
-            JOIN books b ON ub.book_id = b.id
-            WHERE ub.user_id = ?
-            ORDER BY ub.updated_at DESC
-            LIMIT 5
-        ''', (session['user_id'],)).fetchall()
+        
+        user_books = [dict(row) for row in conn.execute('SELECT * FROM user_books WHERE user_id = ?', (session['user_id'],)).fetchall()]
+        popular_books = [dict(row) for row in conn.execute('SELECT b.*, COUNT(l.id) as like_count FROM books b LEFT JOIN likes l ON b.id = l.book_id GROUP BY b.id ORDER BY like_count DESC LIMIT 5').fetchall()]
+        recent_books = [dict(row) for row in conn.execute('SELECT * FROM books ORDER BY created_at DESC LIMIT 5').fetchall()]
 
-        # Get popular books
-        popular_books = conn.execute('''
-            SELECT b.*, COUNT(l.id) as like_count
-            FROM books b
-            LEFT JOIN likes l ON b.id = l.book_id
-            GROUP BY b.id
-            ORDER BY like_count DESC
-            LIMIT 5
-        ''').fetchall()
 
-        # Get recently added books
-        recent_books = conn.execute('''
-            SELECT * FROM books
-            ORDER BY created_at DESC
-            LIMIT 5
-        ''').fetchall()
+        print("User Books:", user_books)
+        print("Popular Books:", popular_books)
+        print("Recent Books:", recent_books)
 
         conn.close()
         return render_template('index.html',
