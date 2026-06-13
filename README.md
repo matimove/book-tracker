@@ -1,15 +1,176 @@
-﻿# book-tracker
+# Book Tracker
 
-User can create an account and log into the application.
+A web application for book lovers to discover, organize, and track their reading journey. Users can manage their personal library, review books, rate titles, and connect with other readers.
 
-User can add books to the application. Additionally, the user can edit and delete the books they have added.
+## Features
 
-User can see all books added to the application. The user can view both their own added books and those added by other users.
+### Authentication
 
-User can search for books using keywords or other criteria (e.g., title, author, genre). The user can search for both their own entries and those from other users.
+* User registration and login
+* Secure user accounts
 
-The application includes user profile pages that display statistics about each user and the books they have added.
+### Book Management
 
-User can choose one or more genres or classifications for each book. Possible categories will be stored in the database (e.g., Fiction, Non-Fiction, Mystery, etc.).
+* Add new books
+* Edit existing books
+* Delete books
+* View all books in the system
 
-In addition to the primary book entry, the application allows for secondary entries, such as reviews or ratings that complement the primary book entry. The user can add reviews related to their own and others' book entries.
+### Search
+
+* Search books by title, author, ISBN, or keywords
+* Browse books added by all users
+
+### Reading Tracker
+
+* Track reading status:
+
+  * Want to Read
+  * Currently Reading
+  * Read
+* Record start and finish dates
+
+### Reviews & Ratings
+
+* Rate books
+* Write reviews
+* View reviews from other users
+
+### User Profiles
+
+* Personal profile pages
+* Reading statistics
+* Lists of books read and currently reading
+
+### Social Features
+
+* Follow other readers
+* Like books
+* Explore community activity
+
+---
+
+## Tech Stack
+
+* Python
+* Flask
+* SQLite
+* HTML/CSS
+* JavaScript
+
+---
+
+## Database
+
+The application uses SQLite for local development.
+
+Initialize the database:
+
+```bash
+sqlite3 database.db < init.sql
+```
+
+---
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone <repository_url>
+cd book-tracker
+```
+
+### 2. Create a Virtual Environment
+
+#### Windows
+
+```bash
+python -m venv venv
+```
+
+#### macOS / Linux
+
+```bash
+python3 -m venv venv
+```
+
+### 3. Activate the Virtual Environment
+
+#### Windows (Command Prompt)
+
+```bash
+venv\Scripts\activate
+```
+
+#### Windows (PowerShell)
+
+```powershell
+.\venv\Scripts\Activate.ps1
+```
+
+#### macOS / Linux
+
+```bash
+source venv/bin/activate
+```
+
+### 4. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 5. Initialize the Database
+
+```bash
+sqlite3 database.db < init.sql
+```
+
+### 6. Run the Application
+
+```bash
+flask run
+```
+
+The application will be available at:
+
+```text
+http://127.0.0.1:5000
+```
+
+---
+
+## Project Structure
+
+```text
+book-tracker/
+├── app.py
+├── database.db
+├── init.sql
+├── requirements.txt
+├── static/
+│   ├── css/
+│   ├── js/
+│   └── images/
+├── templates/
+└── README.md
+```
+
+---
+
+## Future Improvements
+
+* Book cover uploads
+* Reading goals and challenges
+* Book recommendations
+* Activity feed
+* Advanced filtering and sorting
+* Email verification and password reset
+* Public profile sharing
+
+---
+
+## License
+
+This project is intended for educational purposes and personal development.
