@@ -7,19 +7,16 @@ A web application for readers to discover, organize, and track their reading jou
 ### Authentication
 
 * User registration and login
-* Secure user accounts
 
 ### Book Management
 
 * Add new books
 * Edit existing books
 * Delete books
-* View all books in the system
 
 ### Search
 
 * Search books by title, author, ISBN, or keywords
-* Browse books added by all users
 
 ### Reading Tracker
 
@@ -28,7 +25,6 @@ A web application for readers to discover, organize, and track their reading jou
   * Want to Read
   * Currently Reading
   * Read
-* Record start and finish dates
 
 ### Reviews & Ratings
 
@@ -46,7 +42,6 @@ A web application for readers to discover, organize, and track their reading jou
 
 * Follow other readers
 * Like books
-* Explore community activity
 
 ---
 
@@ -67,6 +62,7 @@ The application uses SQLite for local development.
 Initialize the database:
 
 ```bash
+sqlite3 database.db < schema.sql
 sqlite3 database.db < init.sql
 ```
 
@@ -124,6 +120,7 @@ pip install -r requirements.txt
 ### 5. Initialize the Database
 
 ```bash
+sqlite3 database.db < schema.sql
 sqlite3 database.db < init.sql
 ```
 
