@@ -62,6 +62,7 @@ The application uses SQLite for local development.
 Initialize the database:
 
 ```bash
+sqlite3 database.db < schema.sql
 sqlite3 database.db < init.sql
 ```
 
@@ -119,6 +120,7 @@ pip install -r requirements.txt
 ### 5. Initialize the Database
 
 ```bash
+sqlite3 database.db < schema.sql
 sqlite3 database.db < init.sql
 ```
 
