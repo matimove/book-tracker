@@ -436,36 +436,34 @@ def delete_book(book_id):
 @app.route('/search')
 def search():
     query = request.args.get('q', '')
-    if not query:
-        return redirect(url_for('index'))
 
     conn = get_db_connection()
-    books = conn.execute('''
-        SELECT * FROM books
-        WHERE title LIKE ? OR author LIKE ?
-        ORDER BY title
-    ''', (f'%{query}%', f'%{query}%')).fetchall()
+
+    books = []
+    if query:
+        books = conn.execute('''
+            SELECT *
+            FROM books
+            WHERE title LIKE ?
+               OR author LIKE ?
+               OR isbn LIKE ?
+               OR genre LIKE ?
+            ORDER BY title
+        ''', (
+            f'%{query}%',
+            f'%{query}%',
+            f'%{query}%',
+            f'%{query}%'
+        )).fetchall()
+
     conn.close()
 
-    return render_template('search.html', books=books, query=query)
+    return render_template(
+        'search.html',
+        books=books,
+        query=query
+    )
 
-@app.route('/search_books')
-def search_books():
-    query = request.args.get('q', '').strip()
-
-    conn = get_db_connection()
-    books = conn.execute('''
-        SELECT id, title, author, isbn, description, cover_image, published_date, page_count
-        FROM books
-        WHERE title LIKE ?
-           OR author LIKE ?
-           OR isbn LIKE ?
-        ORDER BY title
-        LIMIT 20
-    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
-    conn.close()
-
-    return {'books': [dict(book) for book in books]}
 
 @app.route('/add_to_collection/<int:book_id>', methods=['POST'])
 def add_to_collection(book_id):

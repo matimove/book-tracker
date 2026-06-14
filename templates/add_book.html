@@ -1,205 +1,71 @@
 {% extends "base.html" %}
 
-{% block title %}Add Books - BookTracker{% endblock %}
+{% block title %}Add Book - BookTracker{% endblock %}
 
 {% block content %}
-    <div class="add-book-container">
-        <h1>Add Books</h1>
 
-        <div class="tabs">
-            <a href="#search" class="tab active">Search Books</a>
-            <a href="#manual" class="tab">Add Manually</a>
-        </div>
+<div class="add-book-container">
+    <h1>Add Book</h1>
 
-        <!-- Search Books Tab -->
-        <div id="search" class="tab-content">
-            <div class="search-form">
-                <div class="form-group">
-                    <label for="search-query">Search for books:</label>
-                    <div class="search-input-group">
-                        <input type="text" id="search-query" placeholder="Enter book title, author, or ISBN">
-                        <button id="search-button" class="btn btn-primary">Search</button>
-                    </div>
-                </div>
-            </div>
+```
+<form method="POST" action="{{ url_for('add_book') }}">
+    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
+    <input type="hidden" name="manual_add" value="1">
 
-            <div id="search-results" class="search-results">
-                <!-- Results will be displayed here -->
-            </div>
-        </div>
-
-        <!-- Manual Add Tab -->
-        <div id="manual" class="tab-content" style="display: none;">
-            <form method="POST" action="{{ url_for('add_book') }}">
-                <input type="hidden" name="manual_add" value="1">
-
-                <div class="form-group">
-                    <label for="title">Title*</label>
-                    <input type="text" id="title" name="title" required>
-                </div>
-
-                <div class="form-group">
-                    <label for="author">Author*</label>
-                    <input type="text" id="author" name="author" required>
-                </div>  
-
-                <div class="form-group">
-                    <label for="genre">Genre</label>
-                    <select id="genre" name="genre">
-                        <option value="">Select Genre</option>
-                        <option value="Fantasy">Fantasy</option>
-                        <option value="Science Fiction">Science Fiction</option>
-                        <option value="Mystery">Mystery</option>
-                        <option value="Thriller">Thriller</option>
-                        <option value="Romance">Romance</option>
-                        <option value="Historical Fiction">Historical Fiction</option>
-                        <option value="Non-Fiction">Non-Fiction</option>
-                        <option value="Biography">Biography</option>
-                        <option value="Self-Help">Self-Help</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="isbn">ISBN</label>
-                    <input type="text" id="isbn" name="isbn">
-                </div>
-
-                <div class="form-group">
-                    <label for="description">Description</label>
-                    <textarea id="description" name="description" rows="4"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label for="published_date">Published Date</label>
-                    <input type="text" id="published_date" name="published_date" placeholder="YYYY-MM-DD">
-                </div>
-
-                <div class="form-group">
-                    <label for="page_count">Page Count</label>
-                    <input type="number" id="page_count" name="page_count">
-                </div>
-
-                <div class="form-group">
-                    <label for="cover_image">Cover Image URL</label>
-                    <input type="url" id="cover_image" name="cover_image">
-                </div>
-
-                <button type="submit" class="btn btn-primary">Add Book</button>
-            </form>
-        </div>
+    <div class="form-group">
+        <label for="title">Title*</label>
+        <input type="text" id="title" name="title" required>
     </div>
 
-    <script>
-        // Tab functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const tabs = document.querySelectorAll('.tab');
-            const tabContents = document.querySelectorAll('.tab-content');
+    <div class="form-group">
+        <label for="author">Author*</label>
+        <input type="text" id="author" name="author" required>
+    </div>
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
+    <div class="form-group">
+        <label for="genre">Genre</label>
+        <select id="genre" name="genre">
+            <option value="">Select Genre</option>
+            <option value="Fantasy">Fantasy</option>
+            <option value="Science Fiction">Science Fiction</option>
+            <option value="Mystery">Mystery</option>
+            <option value="Thriller">Thriller</option>
+            <option value="Romance">Romance</option>
+            <option value="Historical Fiction">Historical Fiction</option>
+            <option value="Non-Fiction">Non-Fiction</option>
+            <option value="Biography">Biography</option>
+            <option value="Self-Help">Self-Help</option>
+        </select>
+    </div>
 
-                    // Remove active class from all tabs
-                    tabs.forEach(t => t.classList.remove('active'));
+    <div class="form-group">
+        <label for="isbn">ISBN</label>
+        <input type="text" id="isbn" name="isbn">
+    </div>
 
-                    // Add active class to clicked tab
-                    this.classList.add('active');
+    <div class="form-group">
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4"></textarea>
+    </div>
 
-                    // Hide all tab contents
-                    tabContents.forEach(content => content.style.display = 'none');
+    <div class="form-group">
+        <label for="published_date">Published Date</label>
+        <input type="text" id="published_date" name="published_date" placeholder="YYYY-MM-DD">
+    </div>
 
-                    // Show the selected tab content
-                    const targetId = this.getAttribute('href').substring(1);
-                    document.getElementById(targetId).style.display = 'block';
-                });
-            });
+    <div class="form-group">
+        <label for="page_count">Page Count</label>
+        <input type="number" id="page_count" name="page_count">
+    </div>
 
-            // Search functionality
-            const searchButton = document.getElementById('search-button');
-            const searchQuery = document.getElementById('search-query');
-            const searchResults = document.getElementById('search-results');
+    <div class="form-group">
+        <label for="cover_image">Cover Image URL</label>
+        <input type="url" id="cover_image" name="cover_image">
+    </div>
 
-            const params = new URLSearchParams(window.location.search);
-            const selectedTab = params.get('tab');
+    <button type="submit" class="btn btn-primary">Add Book</button>
+</form>
+```
 
-            if (selectedTab) {
-                const tabLink = Array.from(tabs).find(tab => 
-                    tab.textContent.trim() === selectedTab
-                );
-
-                if (tabLink) {
-                    tabLink.click();
-                }
-            }
-
-            searchButton.addEventListener('click', function() {
-                const query = searchQuery.value.trim();
-                if (!query) {
-                    alert('Please enter a search term');
-                    return;
-                }
-
-                // Show loading indicator
-                searchResults.innerHTML = '<div class="loading">Searching...</div>';
-
-                // Make API request
-                fetch(`/search_books?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.error) {
-                            searchResults.innerHTML = `<div class="error">${data.error}</div>`;
-                            return;
-                        }
-
-                        if (data.books && data.books.length > 0) {
-                            let html = '<h2>Search Results</h2>';
-                            data.books.forEach(book => {
-                                html += `
-                                    <div class="book-result">
-                                        <div class="book-result-cover">
-                                            <img src="${book.cover_image || 'https://via.placeholder.com/100x150'}" alt="${book.title}">
-                                        </div>
-                                        <div class="book-result-info">
-                                            <h3>${book.title}</h3>
-                                            <p><strong>Author:</strong> ${book.author}</p>
-                                            ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
-                                            ${book.published_date ? `<p><strong>Published:</strong> ${book.published_date}</p>` : ''}
-                                            ${book.page_count ? `<p><strong>Pages:</strong> ${book.page_count}</p>` : ''}
-                                            <p class="book-description">${book.description.substring(0, 200)}${book.description.length > 200 ? '...' : ''}</p>
-                                            <form method="POST" action="/add_to_collection/${book.id}" class="add-book-form">
-                                   
-
-                                                <div class="form-group">
-                                                    <label for="status-${book.isbn}">Add to shelf:</label>
-                                                    <select name="status" id="status-${book.isbn}">
-                                                        <option value="want_to_read">Want to Read</option>
-                                                        <option value="currently_reading">Currently Reading</option>
-                                                        <option value="read">Read</option>
-                                                    </select>
-                                                </div>
-
-                                                <button type="submit" class="btn btn-primary">Add to My Books</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                `;
-                            });
-                            searchResults.innerHTML = html;
-                        } else {
-                            searchResults.innerHTML = '<div class="error">No books found. Try a different search term.</div>';
-                        }
-                    })
-                    .catch(error => {
-                        searchResults.innerHTML = `<div class="error">Error searching for books: ${error.message}</div>`;
-                    });
-            });
-
-            // Also search when pressing Enter
-            searchQuery.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') {
-                    searchButton.click();
-                }
-            });
-        });
-    </script>
+</div>
 {% endblock %}
