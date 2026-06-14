@@ -2,7 +2,7 @@
 
 A web application for readers to discover, organize, and track their reading journey. Users can manage their personal library, review books, rate titles, and connect with other readers.
 
-## Features
+## Current Features
 
 ### Authentication
 
