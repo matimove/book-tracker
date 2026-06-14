@@ -19,6 +19,7 @@
             </div>
             {% if 'user_id' in session and session['user_id'] != user['id'] %}
                 <form method="POST" action="{% if is_following %}{{ url_for('unfollow', username=user['username']) }}{% else %}{{ url_for('follow', username=user['username']) }}{% endif %}">
+                        <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                     <button type="submit" class="btn {% if is_following %}btn-secondary{% else %}btn-primary{% endif %}">
                         {% if is_following %}Unfollow{% else %}Follow{% endif %}
                     </button>

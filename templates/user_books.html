@@ -23,6 +23,7 @@
                                 <p>{{ book['author'] }}</p>
                             </a>
                             <form method="POST" action="{{ url_for('add_to_collection', book_id=book['id']) }}" class="book-actions">
+                                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                                 <select name="status" onchange="this.form.submit()">
                                     <option value="want_to_read" selected>Want to Read</option>
                                     <option value="currently_reading">Currently Reading</option>
@@ -49,6 +50,7 @@
                                 <p>{{ book['author'] }}</p>
                             </a>
                             <form method="POST" action="{{ url_for('add_to_collection', book_id=book['id']) }}" class="book-actions">
+                                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                                 <select name="status" onchange="this.form.submit()">
                                     <option value="want_to_read">Want to Read</option>
                                     <option value="currently_reading" selected>Currently Reading</option>
@@ -84,6 +86,7 @@
                                 </div>
                             </a>
                             <form method="POST" action="{{ url_for('add_to_collection', book_id=book['id']) }}" class="book-actions">
+                                    <input type="hidden" name="csrf_token" value="{{ session['csrf_token'] }}">
                                 <select name="status" onchange="this.form.submit()">
                                     <option value="want_to_read">Want to Read</option>
                                     <option value="currently_reading">Currently Reading</option>

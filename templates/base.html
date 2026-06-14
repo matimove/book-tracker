@@ -13,7 +13,8 @@
             <a href="{{ url_for('index') }}" class="navbar-brand">BookTracker</a>
             <div class="navbar-menu">
                 {% if 'user_id' in session %}
-                    <a href="{{ url_for('search') }}" class="navbar-item"><i class="fas fa-search"></i> Search</a>
+                    <a href="{{ url_for('add_book', tab='Search Books') }}" class="navbar-item"><i class="fas fa-search"></i> Search</a>
+                    <a href="{{ url_for('add_book', tab='Add Manually') }}" class="navbar-item"><i class="fas fa-book"></i> Add Book</a>
                     <a href="{{ url_for('my_books') }}" class="navbar-item"><i class="fas fa-book"></i> My Books</a>
                     <a href="{{ url_for('profile', username=session['username']) }}" class="navbar-item">
                         <i class="fas fa-user"></i> {{ session['username'] }}

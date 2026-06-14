@@ -16,11 +16,13 @@ CREATE TABLE books (
     title TEXT NOT NULL,
     author TEXT NOT NULL,
     isbn TEXT UNIQUE,
+    genre TEXT,
     description TEXT,
     cover_image TEXT,
     published_date DATE,
     page_count INTEGER,
     average_rating REAL DEFAULT 0.0,
+    created_by INTEGER,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

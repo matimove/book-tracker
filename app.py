@@ -3,6 +3,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
 from datetime import datetime
+import secrets
+from flask import abort
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'  # Change this in production
@@ -31,7 +33,25 @@ def index():
     if 'user_id' in session:
         conn = get_db_connection()
         
-        user_books = [dict(row) for row in conn.execute('SELECT * FROM user_books WHERE user_id = ?', (session['user_id'],)).fetchall()]
+        #user_books = [dict(row) for row in conn.execute('SELECT * FROM user_books WHERE user_id = ?', (session['user_id'],)).fetchall()]
+        user_books = [dict(row) for row in conn.execute('''
+    SELECT
+        books.id AS book_id,
+        books.title,
+        books.author,
+        books.cover_image,
+        books.genre,
+        books.description,
+        books.page_count,
+        books.average_rating,
+        user_books.status,
+        user_books.updated_at
+    FROM user_books
+    JOIN books ON user_books.book_id = books.id
+    WHERE user_books.user_id = ?
+    ORDER BY user_books.updated_at DESC
+    LIMIT 6
+''', (session['user_id'],)).fetchall()]
         popular_books = [dict(row) for row in conn.execute('SELECT b.*, COUNT(l.id) as like_count FROM books b LEFT JOIN likes l ON b.id = l.book_id GROUP BY b.id ORDER BY like_count DESC LIMIT 5').fetchall()]
         recent_books = [dict(row) for row in conn.execute('SELECT * FROM books ORDER BY created_at DESC LIMIT 5').fetchall()]
 
@@ -90,12 +110,20 @@ def login():
         if user and check_password_hash(user['password_hash'], password):
             session['user_id'] = user['id']
             session['username'] = user['username']
+            session['csrf_token'] = secrets.token_hex(16)
             flash('Login successful!', 'success')
             return redirect(url_for('index'))
 
         flash('Invalid username or password!', 'error')
 
     return render_template('login.html')
+
+def check_csrf():
+    if 'csrf_token' not in session:
+        abort(403)
+
+    if request.form.get('csrf_token') != session['csrf_token']:
+        abort(403)
 
 @app.route('/logout')
 def logout():
@@ -142,20 +170,38 @@ def profile(username):
         ''', (session['user_id'], user['id'])).fetchone()
         is_following = follow is not None
 
+    follows_count = conn.execute('''
+        SELECT COUNT(*) AS count
+        FROM follows
+        WHERE follower_id = ?
+    ''', (user['id'],)).fetchone()['count']
+
+    followers_count = conn.execute('''
+        SELECT COUNT(*) AS count
+        FROM follows
+        WHERE following_id = ?
+    ''', (user['id'],)).fetchone()['count']
+
     conn.close()
 
-    return render_template('profile.html',
-                         user=user,
-                         want_to_read=want_to_read,
-                         currently_reading=currently_reading,
-                         read=read,
-                         is_following=is_following)
+    return render_template(
+        'profile.html',
+        user=user,
+        want_to_read=want_to_read,
+        currently_reading=currently_reading,
+        read=read,
+        is_following=is_following,
+        follows_count=follows_count,
+        followers_count=followers_count
+    )
 
 @app.route('/follow/<username>', methods=['POST'])
 def follow(username):
     if 'user_id' not in session:
         flash('Please log in to follow users.', 'error')
         return redirect(url_for('login'))
+    
+    check_csrf()
 
     conn = get_db_connection()
     user = conn.execute('''
@@ -188,7 +234,7 @@ def unfollow(username):
     if 'user_id' not in session:
         flash('Please log in to unfollow users.', 'error')
         return redirect(url_for('login'))
-
+    check_csrf()
     conn = get_db_connection()
     user = conn.execute('''
         SELECT id FROM users WHERE username = ?
@@ -212,8 +258,11 @@ def unfollow(username):
 def book_detail(book_id):
     conn = get_db_connection()
     book = conn.execute('''
-        SELECT * FROM books WHERE id = ?
-    ''', (book_id,)).fetchone()
+    SELECT b.*, u.username AS added_by_username
+    FROM books b
+    LEFT JOIN users u ON b.created_by = u.id
+    WHERE b.id = ?
+''', (book_id,)).fetchone()
 
     if not book:
         flash('Book not found!', 'error')
@@ -252,6 +301,8 @@ def book_detail(book_id):
         ORDER BY ub.updated_at DESC
     ''', (book_id,)).fetchall()
 
+    is_owner = 'user_id' in session and book['created_by'] == session['user_id']
+
     conn.close()
 
     return render_template('book.html',
@@ -259,39 +310,126 @@ def book_detail(book_id):
                          user_status=user_status,
                          likes_count=likes_count,
                          user_liked=user_liked,
-                         reviews=reviews)
+                         reviews=reviews,
+                         is_owner=is_owner)
 
 @app.route('/add_book', methods=['GET', 'POST'])
 def add_book():
     if 'user_id' not in session:
         flash('Please log in to add books.', 'error')
         return redirect(url_for('login'))
-
+    check_csrf()
     if request.method == 'POST':
         title = request.form['title']
         author = request.form['author']
-        isbn = request.form['isbn']
-        description = request.form['description']
-        published_date = request.form['published_date']
-        page_count = request.form['page_count']
-        cover_image = request.form['cover_image']
+        genre = request.form.get('genre')
+        isbn = request.form.get('isbn')
+        description = request.form.get('description')
+        published_date = request.form.get('published_date')
+        page_count = request.form.get('page_count')
+        cover_image = request.form.get('cover_image')
 
         conn = get_db_connection()
         try:
             conn.execute('''
-                INSERT INTO books
-                (title, author, isbn, description, cover_image, published_date, page_count)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (title, author, isbn, description, cover_image, published_date, page_count))
+    INSERT INTO books (
+        title, author, isbn, genre,
+        description, cover_image,
+        published_date, page_count,
+        created_by
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+''', (
+    title,
+    author,
+    isbn,
+    genre,
+    description,
+    cover_image,
+    published_date,
+    page_count,
+    session['user_id']
+))
             conn.commit()
             flash('Book added successfully!', 'success')
-            return redirect(url_for('index'))
         except sqlite3.IntegrityError:
             flash('A book with this ISBN already exists!', 'error')
         finally:
             conn.close()
 
+        return redirect(url_for('add_book'))
+
     return render_template('add_book.html')
+
+@app.route('/edit_book/<int:book_id>', methods=['GET', 'POST'])
+def edit_book(book_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    check_csrf()
+    conn = get_db_connection()
+    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+
+    if not book:
+        conn.close()
+        flash('Book not found!', 'error')
+        return redirect(url_for('index'))
+
+    if book['created_by'] != session['user_id']:
+        conn.close()
+        flash('You can only edit books you added.', 'error')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    if request.method == 'POST':
+        conn.execute('''
+            UPDATE books
+            SET title = ?, author = ?, genre = ?, isbn = ?, description = ?,
+                cover_image = ?, published_date = ?, page_count = ?
+            WHERE id = ?
+        ''', (
+            request.form['title'],
+            request.form['author'],
+            request.form.get('genre'),
+            request.form.get('isbn'),
+            request.form.get('description'),
+            request.form.get('cover_image'),
+            request.form.get('published_date'),
+            request.form.get('page_count'),
+            book_id
+        ))
+
+        conn.commit()
+        conn.close()
+        flash('Book updated successfully!', 'success')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    conn.close()
+    return render_template('edit_book.html', book=book)
+
+
+@app.route('/delete_book/<int:book_id>', methods=['POST'])
+def delete_book(book_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    check_csrf()
+    conn = get_db_connection()
+    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+
+    if not book:
+        conn.close()
+        flash('Book not found!', 'error')
+        return redirect(url_for('index'))
+
+    if book['created_by'] != session['user_id']:
+        conn.close()
+        flash('You can only delete books you added.', 'error')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    conn.execute('DELETE FROM books WHERE id = ?', (book_id,))
+    conn.commit()
+    conn.close()
+
+    flash('Book deleted successfully!', 'success')
+    return redirect(url_for('index'))
 
 @app.route('/search')
 def search():
@@ -309,29 +447,57 @@ def search():
 
     return render_template('search.html', books=books, query=query)
 
+@app.route('/search_books')
+def search_books():
+    query = request.args.get('q', '').strip()
+
+    conn = get_db_connection()
+    books = conn.execute('''
+        SELECT id, title, author, isbn, description, cover_image, published_date, page_count
+        FROM books
+        WHERE title LIKE ?
+           OR author LIKE ?
+           OR isbn LIKE ?
+        ORDER BY title
+        LIMIT 20
+    ''', (f'%{query}%', f'%{query}%', f'%{query}%')).fetchall()
+    conn.close()
+
+    return {'books': [dict(book) for book in books]}
+
 @app.route('/add_to_collection/<int:book_id>', methods=['POST'])
 def add_to_collection(book_id):
     if 'user_id' not in session:
         flash('Please log in to add books to your collection.', 'error')
         return redirect(url_for('login'))
-
-    status = request.form['status']
-    rating = request.form.get('rating', None)
-    review = request.form.get('review', None)
-    start_date = request.form.get('start_date', None)
-    finish_date = request.form.get('finish_date', None)
-
+    check_csrf()
     conn = get_db_connection()
 
-    # Check if book exists in user's collection
     user_book = conn.execute('''
         SELECT * FROM user_books
         WHERE user_id = ? AND book_id = ?
     ''', (session['user_id'], book_id)).fetchone()
 
+    status = request.form.get('status')
+    rating = request.form.get('rating')
+    review = request.form.get('review')
+    start_date = request.form.get('start_date')
+    finish_date = request.form.get('finish_date')
+
+    if user_book:
+        status = status or user_book['status']
+        rating = rating or user_book['rating']
+        review = review if review is not None else user_book['review']
+        start_date = start_date or user_book['start_date']
+        finish_date = finish_date or user_book['finish_date']
+    else:
+        if not status:
+            flash('Please choose a reading status first.', 'error')
+            conn.close()
+            return redirect(url_for('book_detail', book_id=book_id))
+
     try:
         if user_book:
-            # Update existing record
             conn.execute('''
                 UPDATE user_books
                 SET status = ?, rating = ?, review = ?,
@@ -339,18 +505,30 @@ def add_to_collection(book_id):
                 WHERE id = ?
             ''', (status, rating, review, start_date, finish_date, user_book['id']))
         else:
-            # Insert new record
             conn.execute('''
                 INSERT INTO user_books
                 (user_id, book_id, status, rating, review, start_date, finish_date)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ''', (session['user_id'], book_id, status, rating, review, start_date, finish_date))
 
+        conn.execute('''
+            UPDATE books
+            SET average_rating = COALESCE((
+                SELECT ROUND(AVG(rating), 2)
+                FROM user_books
+                WHERE book_id = ?
+                AND rating IS NOT NULL
+            ), 0.0)
+            WHERE id = ?
+        ''', (book_id, book_id))
+
         conn.commit()
-        flash('Book added to your collection!', 'success')
+        flash('Book entry updated successfully!', 'success')
+
     except Exception as e:
         conn.rollback()
-        flash('Error adding book to collection.', 'error')
+        flash(f'Error adding book to collection: {e}', 'error')
+
     finally:
         conn.close()
 
@@ -361,7 +539,7 @@ def like_book(book_id):
     if 'user_id' not in session:
         flash('Please log in to like books.', 'error')
         return redirect(url_for('login'))
-
+    check_csrf()
     conn = get_db_connection()
 
     try:
@@ -382,7 +560,7 @@ def unlike_book(book_id):
     if 'user_id' not in session:
         flash('Please log in to unlike books.', 'error')
         return redirect(url_for('login'))
-
+    check_csrf()
     conn = get_db_connection()
     conn.execute('''
         DELETE FROM likes

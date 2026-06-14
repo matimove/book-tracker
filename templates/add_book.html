@@ -41,6 +41,22 @@
                 <div class="form-group">
                     <label for="author">Author*</label>
                     <input type="text" id="author" name="author" required>
+                </div>  
+
+                <div class="form-group">
+                    <label for="genre">Genre</label>
+                    <select id="genre" name="genre">
+                        <option value="">Select Genre</option>
+                        <option value="Fantasy">Fantasy</option>
+                        <option value="Science Fiction">Science Fiction</option>
+                        <option value="Mystery">Mystery</option>
+                        <option value="Thriller">Thriller</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Historical Fiction">Historical Fiction</option>
+                        <option value="Non-Fiction">Non-Fiction</option>
+                        <option value="Biography">Biography</option>
+                        <option value="Self-Help">Self-Help</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -103,6 +119,19 @@
             const searchQuery = document.getElementById('search-query');
             const searchResults = document.getElementById('search-results');
 
+            const params = new URLSearchParams(window.location.search);
+            const selectedTab = params.get('tab');
+
+            if (selectedTab) {
+                const tabLink = Array.from(tabs).find(tab => 
+                    tab.textContent.trim() === selectedTab
+                );
+
+                if (tabLink) {
+                    tabLink.click();
+                }
+            }
+
             searchButton.addEventListener('click', function() {
                 const query = searchQuery.value.trim();
                 if (!query) {
@@ -132,19 +161,13 @@
                                         </div>
                                         <div class="book-result-info">
                                             <h3>${book.title}</h3>
-                                            <p><strong>Author:</strong> ${book.authors.join(', ')}</p>
+                                            <p><strong>Author:</strong> ${book.author}</p>
                                             ${book.isbn ? `<p><strong>ISBN:</strong> ${book.isbn}</p>` : ''}
                                             ${book.published_date ? `<p><strong>Published:</strong> ${book.published_date}</p>` : ''}
                                             ${book.page_count ? `<p><strong>Pages:</strong> ${book.page_count}</p>` : ''}
                                             <p class="book-description">${book.description.substring(0, 200)}${book.description.length > 200 ? '...' : ''}</p>
-                                            <form method="POST" action="{{ url_for('add_book') }}" class="add-book-form">
-                                                <input type="hidden" name="title" value="${book.title}">
-                                                <input type="hidden" name="author" value="${book.authors.join(', ')}">
-                                                <input type="hidden" name="isbn" value="${book.isbn}">
-                                                <input type="hidden" name="description" value="${book.description.replace(/"/g, '&quot;')}">
-                                                <input type="hidden" name="cover_image" value="${book.cover_image}">
-                                                <input type="hidden" name="published_date" value="${book.published_date}">
-                                                <input type="hidden" name="page_count" value="${book.page_count}">
+                                            <form method="POST" action="/add_to_collection/${book.id}" class="add-book-form">
+                                   
 
                                                 <div class="form-group">
                                                     <label for="status-${book.isbn}">Add to shelf:</label>
