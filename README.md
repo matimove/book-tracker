@@ -4,44 +4,21 @@ A web application for readers to discover, organize, and track their reading jou
 
 ## Current Features
 
-### Authentication
-
-* User registration and login
-
-### Book Management
-
-* Add new books
-* Edit existing books
-* Delete books
-
-### Search
-
-* Search books by title, author, ISBN, or keywords
-
-### Reading Tracker
-
-* Track reading status:
+* Users can create an account and log in to the application.
+* Users can add, edit, and delete books.
+* Users can view all books that have been added to the application.
+* Users can search for books by title, author, ISBN, genre, or other keywords.
+* The application provides user profile pages showing reading statistics, book collections, and social information.
+* Users can assign a genre to each book to classify and organize books in the system.
+* Users can add additional information to books through ratings and reviews, which are visible to other users.
+* Users can track their reading progress using the statuses:
 
   * Want to Read
   * Currently Reading
   * Read
-
-### Reviews & Ratings
-
-* Rate books
-* Write reviews
-* View reviews from other users
-
-### User Profiles
-
-* Personal profile pages
-* Reading statistics
-* Lists of books read and currently reading
-
-### Social Features
-
-* Follow other readers
-* Like books
+* Users can follow other users and view their profiles.
+* Users can like books added by other users.
+* Users can view community reviews and ratings for books.
 
 ---
 
