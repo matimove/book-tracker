@@ -15,6 +15,12 @@
     </div>
 
     {% if 'user_id' in session %}
+        <div class="section" style="text-align:center;">
+            <a href="{{ url_for('all_books') }}" class="btn btn-primary">
+                View All Books
+            </a>
+        </div>
+
         <div class="section">
             <h2>Your Recent Activity</h2>
             {% if user_books %}

@@ -318,7 +318,8 @@ def add_book():
     if 'user_id' not in session:
         flash('Please log in to add books.', 'error')
         return redirect(url_for('login'))
-    check_csrf()
+    if request.method == "POST":
+        check_csrf()
     if request.method == 'POST':
         title = request.form['title']
         author = request.form['author']
@@ -365,7 +366,8 @@ def add_book():
 def edit_book(book_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    check_csrf()
+    if request.method == "POST":
+        check_csrf()
     conn = get_db_connection()
     book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
 
@@ -554,6 +556,18 @@ def like_book(book_id):
 
     conn.close()
     return redirect(url_for('book_detail', book_id=book_id))
+
+@app.route('/books')
+def all_books():
+    conn = get_db_connection()
+    books = conn.execute('''
+        SELECT *
+        FROM books
+        ORDER BY title
+    ''').fetchall()
+    conn.close()
+
+    return render_template('all_books.html', books=books)
 
 @app.route('/unlike/<int:book_id>', methods=['POST'])
 def unlike_book(book_id):
