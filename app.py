@@ -1042,7 +1042,12 @@ def add_to_collection(book_id):
         conn.close()
         flash('Review is too long!', 'error')
         return redirect(url_for('book_detail', book_id=book_id))
-
+    
+    if len(review) < 1:
+        conn.close()
+        flash('Review is too short!', 'error')
+        return redirect(url_for('book_detail', book_id=book_id))
+    
 
     if user_book:
 
