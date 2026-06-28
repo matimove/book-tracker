@@ -28,7 +28,6 @@ A web application for readers to discover, organize, and track their reading jou
 * Flask
 * SQLite
 * HTML/CSS
-* JavaScript
 
 ---
 
@@ -54,44 +53,10 @@ git clone <repository_url>
 cd book-tracker
 ```
 
-### 2. Create a Virtual Environment
-
-#### Windows
-
-```bash
-python -m venv venv
-```
-
-#### macOS / Linux
-
-```bash
-python3 -m venv venv
-```
-
-### 3. Activate the Virtual Environment
-
-#### Windows (Command Prompt)
-
-```bash
-venv\Scripts\activate
-```
-
-#### Windows (PowerShell)
-
-```powershell
-.\venv\Scripts\Activate.ps1
-```
-
-#### macOS / Linux
-
-```bash
-source venv/bin/activate
-```
-
 ### 4. Install Dependencies
 
 ```bash
-pip install -r requirements.txt
+pip install flask
 ```
 
 ### 5. Initialize the Database
@@ -112,39 +77,3 @@ The application will be available at:
 ```text
 http://127.0.0.1:5000
 ```
-
----
-
-## Project Structure
-
-```text
-book-tracker/
-├── app.py
-├── database.db
-├── init.sql
-├── requirements.txt
-├── static/
-│   ├── css/
-│   ├── js/
-│   └── images/
-├── templates/
-└── README.md
-```
-
----
-
-## Future Improvements
-
-* Book cover uploads
-* Reading goals and challenges
-* Book recommendations
-* Activity feed
-* Advanced filtering and sorting
-* Email verification and password reset
-* Public profile sharing
-
----
-
-## License
-
-This project is intended for educational purposes and personal development.
