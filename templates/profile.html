@@ -7,9 +7,7 @@
        
         <div class="profile-info">
             <h1>{{ user['username'] }}</h1>
-            {% if user['bio'] %}
-                <p class="bio">{{ user['bio'] }}</p>
-            {% endif %}
+            
             <div class="profile-stats">
                 <span><strong>{{ want_to_read|length + currently_reading|length + read|length }}</strong> books</span>
                 <a href="{{ url_for('following', username=user['username']) }}">
@@ -42,9 +40,26 @@
                 {% for book in want_to_read %}
                     <div class="book-card">
                         <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                           
+                            
                             <h3>{{ book['title'] }}</h3>
-                            <p>{{ book['author'] }}</p>
+                            <p class="book-author">by {{ book['author'] }}</p>
+
+                            {% if book['genre'] %}
+                                <span class="genre-badge">{{ book['genre'] }}</span>
+                            {% endif %}
+
+                            <div class="book-card-stats">
+                                <span>⭐ {{ book['average_rating'] or '0.0' }}</span>
+                                {% if book['page_count'] %}
+                                    <span>{{ book['page_count'] }} pages</span>
+                                {% endif %}
+                            </div>
+
+                            {% if book['description'] %}
+                                <p class="book-card-description">
+                                    {{ book['description'][:100] }}{% if book['description']|length > 100 %}...{% endif %}
+                                </p>
+                            {% endif %}
                         </a>
                     </div>
                 {% endfor %}
@@ -63,7 +78,24 @@
                         <a href="{{ url_for('book_detail', book_id=book['id']) }}">
                             
                             <h3>{{ book['title'] }}</h3>
-                            <p>{{ book['author'] }}</p>
+                            <p class="book-author">by {{ book['author'] }}</p>
+
+                            {% if book['genre'] %}
+                                <span class="genre-badge">{{ book['genre'] }}</span>
+                            {% endif %}
+
+                            <div class="book-card-stats">
+                                <span>⭐ {{ book['average_rating'] or '0.0' }}</span>
+                                {% if book['page_count'] %}
+                                    <span>{{ book['page_count'] }} pages</span>
+                                {% endif %}
+                            </div>
+
+                            {% if book['description'] %}
+                                <p class="book-card-description">
+                                    {{ book['description'][:100] }}{% if book['description']|length > 100 %}...{% endif %}
+                                </p>
+                            {% endif %}
                         </a>
                     </div>
                 {% endfor %}
@@ -82,7 +114,24 @@
                         <a href="{{ url_for('book_detail', book_id=book['id']) }}">
                             
                             <h3>{{ book['title'] }}</h3>
-                            <p>{{ book['author'] }}</p>
+                            <p class="book-author">by {{ book['author'] }}</p>
+
+                            {% if book['genre'] %}
+                                <span class="genre-badge">{{ book['genre'] }}</span>
+                            {% endif %}
+
+                            <div class="book-card-stats">
+                                <span>⭐ {{ book['average_rating'] or '0.0' }}</span>
+                                {% if book['page_count'] %}
+                                    <span>{{ book['page_count'] }} pages</span>
+                                {% endif %}
+                            </div>
+
+                            {% if book['description'] %}
+                                <p class="book-card-description">
+                                    {{ book['description'][:100] }}{% if book['description']|length > 100 %}...{% endif %}
+                                </p>
+                            {% endif %}
                         </a>
                     </div>
                 {% endfor %}
@@ -101,19 +150,26 @@
             {% for book in added_books %}
                 <div class="book-card">
                     <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-
+                        
                         <h3>{{ book['title'] }}</h3>
-
-                        <p class="book-author">
-                            by {{ book['author'] }}
-                        </p>
+                        <p class="book-author">by {{ book['author'] }}</p>
 
                         {% if book['genre'] %}
-                            <span class="genre-badge">
-                                {{ book['genre'] }}
-                            </span>
+                            <span class="genre-badge">{{ book['genre'] }}</span>
                         {% endif %}
 
+                        <div class="book-card-stats">
+                            <span>⭐ {{ book['average_rating'] or '0.0' }}</span>
+                            {% if book['page_count'] %}
+                                <span>{{ book['page_count'] }} pages</span>
+                            {% endif %}
+                        </div>
+
+                        {% if book['description'] %}
+                            <p class="book-card-description">
+                                {{ book['description'][:100] }}{% if book['description']|length > 100 %}...{% endif %}
+                            </p>
+                        {% endif %}
                     </a>
                 </div>
             {% endfor %}

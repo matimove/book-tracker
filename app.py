@@ -5,9 +5,10 @@ import os
 from datetime import datetime
 import secrets
 from flask import abort
+import config
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'  # Change this in production
+app.secret_key = config.secret_key
 
 # Database configuration
 DATABASE = 'database.db'
@@ -38,7 +39,6 @@ def index():
         books.id AS book_id,
         books.title,
         books.author,
-        books.cover_image,
         books.genre,
         books.description,
         books.page_count,
@@ -59,7 +59,7 @@ def index():
                 b.author,
                 b.genre,
                 b.description,
-                b.cover_image,
+
                 b.page_count,
                 b.average_rating,
                 COUNT(l.id) AS like_count
@@ -77,7 +77,7 @@ def index():
                 author,
                 genre,
                 description,
-                cover_image,
+              
                 page_count,
                 average_rating,
                 created_at
@@ -100,6 +100,18 @@ def register():
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+
+        if len(username) > 50:
+            flash('Username too long!', 'error')
+            return redirect(url_for('register'))
+
+        if len(email) > 255:
+            flash('Email too long!', 'error')
+            return redirect(url_for('register'))
+
+        if len(password) < 8:
+            flash('Password must be at least 8 characters!', 'error')
+            return redirect(url_for('register'))
 
         if password != confirm_password:
             flash('Passwords do not match!', 'error')
@@ -170,7 +182,7 @@ def profile(username):
         SELECT
             id,
             username,
-            bio,
+        
             profile_picture
         FROM users
         WHERE username = ?
@@ -186,7 +198,7 @@ def profile(username):
         b.author,
         b.genre,
         b.description,
-        b.cover_image,
+      
         b.page_count,
         b.average_rating,
         b.created_at
@@ -221,7 +233,7 @@ def profile(username):
             author,
             genre,
             description,
-            cover_image,
+          
             page_count,
             average_rating,
             created_at
@@ -339,7 +351,7 @@ def following(username):
         SELECT
             id,
             username,
-            bio,
+        
             profile_picture
         FROM users
         WHERE username = ?
@@ -355,7 +367,7 @@ def following(username):
         SELECT
             users.id,
             users.username,
-            users.bio,
+            
             users.profile_picture
         FROM follows
         JOIN users
@@ -384,7 +396,7 @@ def followers(username):
         SELECT
             id,
             username,
-            bio,
+         
             profile_picture
         FROM users
         WHERE username = ?
@@ -401,7 +413,7 @@ def followers(username):
         SELECT
             users.id,
             users.username,
-            users.bio,
+            
             users.profile_picture
         FROM follows
         JOIN users
@@ -431,7 +443,7 @@ def book_detail(book_id):
         b.isbn,
         b.genre,
         b.description,
-        b.cover_image,
+    
         b.published_date,
         b.page_count,
         b.average_rating,
@@ -530,7 +542,7 @@ def add_book():
         description = request.form.get('description', '').strip()
         published_date = request.form.get('published_date', '').strip()
         page_count = request.form.get('page_count', '').strip()
-        cover_image = request.form.get('cover_image', '').strip()
+        
 
 
         # Required fields
@@ -549,6 +561,10 @@ def add_book():
 
         if len(description) > 2000:
             flash('Description is too long!', 'error')
+            return redirect(url_for('add_book'))
+        
+        if len(isbn) > 30:
+            flash('ISBN is too long!', 'error')
             return redirect(url_for('add_book'))
 
 
@@ -612,18 +628,18 @@ def add_book():
             conn.execute('''
             INSERT INTO books (
                 title, author, isbn, genre,
-                description, cover_image,
+                description, 
                 published_date, page_count,
                 created_by
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 title,
                 author,
                 isbn or None,
                 genre or None,
                 description or None,
-                cover_image or None,
+               
                 published_date or None,
                 int(page_count) if page_count else None,
                 session['user_id']
@@ -661,7 +677,7 @@ def edit_book(book_id):
                 isbn,
                 genre,
                 description,
-                cover_image,
+              
                 published_date,
                 page_count,
                 average_rating,
@@ -692,7 +708,7 @@ def edit_book(book_id):
         genre = request.form.get('genre', '').strip()
         isbn = request.form.get('isbn', '').strip()
         description = request.form.get('description', '').strip()
-        cover_image = request.form.get('cover_image', '').strip()
+       
         published_date = request.form.get('published_date', '').strip()
         page_count = request.form.get('page_count', '').strip()
 
@@ -791,7 +807,7 @@ def edit_book(book_id):
                 genre = ?,
                 isbn = ?,
                 description = ?,
-                cover_image = ?,
+               
                 published_date = ?,
                 page_count = ?
             WHERE id = ?
@@ -801,7 +817,7 @@ def edit_book(book_id):
             genre or None,
             isbn or None,
             description or None,
-            cover_image or None,
+           
             published_date or None,
             page_count,
             book_id
@@ -916,7 +932,7 @@ def search():
                 isbn,
                 genre,
                 description,
-                cover_image,
+             
                 published_date,
                 page_count,
                 average_rating,
@@ -1145,7 +1161,7 @@ def all_books():
             isbn,
             genre,
             description,
-            cover_image,
+           
             published_date,
             page_count,
             average_rating,
@@ -1179,84 +1195,7 @@ def unlike_book(book_id):
     flash('Book unliked.', 'success')
     return redirect(url_for('book_detail', book_id=book_id))
 
-@app.route('/my_books')
-def my_books():
-    if 'user_id' not in session:
-        flash('Please log in to view your books.', 'error')
-        return redirect(url_for('login'))
 
-    conn = get_db_connection()
-
-    book_columns = '''
-        b.id,
-        b.title,
-        b.author,
-        b.isbn,
-        b.genre,
-        b.description,
-        b.cover_image,
-        b.published_date,
-        b.page_count,
-        b.average_rating,
-        b.created_by,
-        b.created_at
-    '''
-
-    want_to_read = conn.execute(f'''
-        SELECT {book_columns}
-        FROM user_books ub
-        JOIN books b ON ub.book_id = b.id
-        WHERE ub.user_id = ?
-        AND ub.status = 'want_to_read'
-    ''', (session['user_id'],)).fetchall()
-
-
-    currently_reading = conn.execute(f'''
-        SELECT {book_columns}
-        FROM user_books ub
-        JOIN books b ON ub.book_id = b.id
-        WHERE ub.user_id = ?
-        AND ub.status = 'currently_reading'
-    ''', (session['user_id'],)).fetchall()
-
-
-    read = conn.execute(f'''
-        SELECT {book_columns}
-        FROM user_books ub
-        JOIN books b ON ub.book_id = b.id
-        WHERE ub.user_id = ?
-        AND ub.status = 'read'
-    ''', (session['user_id'],)).fetchall()
-
-
-    user_book_ratings = {}
-
-    for book in read:
-        rating = conn.execute('''
-            SELECT rating
-            FROM user_books
-            WHERE user_id = ?
-            AND book_id = ?
-        ''', (
-            session['user_id'],
-            book['id']
-        )).fetchone()
-
-        if rating:
-            user_book_ratings[book['id']] = {
-                'rating': rating['rating']
-            }
-
-
-    conn.close()
-
-    return render_template(
-        'user_books.html',
-        want_to_read=want_to_read,
-        currently_reading=currently_reading,
-        read=read,
-        user_book_ratings=user_book_ratings
-    )
 
 if __name__ == '__main__':
     app.run(debug=True)
