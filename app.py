@@ -400,7 +400,7 @@ def followers(username):
     user = conn.execute('''
         SELECT
             id,
-            username,
+            username
          
             
         FROM users
@@ -417,7 +417,7 @@ def followers(username):
     follower_users = conn.execute('''
         SELECT
             users.id,
-            users.username,
+            users.username
             
         
         FROM follows
