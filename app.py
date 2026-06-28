@@ -31,67 +31,72 @@ init_db()
 
 @app.route('/')
 def index():
+    conn = get_db_connection()
+
+    user_books = []
+
     if 'user_id' in session:
-        conn = get_db_connection()
-        
         user_books = [dict(row) for row in conn.execute('''
-    SELECT
-        books.id AS book_id,
-        books.title,
-        books.author,
-        books.genre,
-        books.description,
-        books.page_count,
-        books.average_rating,
-        user_books.status,
-        user_books.updated_at
-    FROM user_books
-    JOIN books ON user_books.book_id = books.id
-    WHERE user_books.user_id = ?
-    ORDER BY user_books.updated_at DESC
-    LIMIT 6
-''', (session['user_id'],)).fetchall()]
-        
-        popular_books = [dict(row) for row in conn.execute('''
-            SELECT 
-                b.id,
-                b.title,
-                b.author,
-                b.genre,
-                b.description,
-
-                b.page_count,
-                b.average_rating,
-                COUNT(l.id) AS like_count
-            FROM books b
-            LEFT JOIN likes l ON b.id = l.book_id
-            GROUP BY b.id
-            ORDER BY like_count DESC
-            LIMIT 5
-        ''').fetchall()]
-
-        recent_books = [dict(row) for row in conn.execute('''
             SELECT
-                id,
-                title,
-                author,
-                genre,
-                description,
-              
-                page_count,
-                average_rating,
-                created_at
-            FROM books
-            ORDER BY created_at DESC
-            LIMIT 5
-        ''').fetchall()]
+                books.id AS book_id,
+                books.title,
+                books.author,
+                books.genre,
+                books.description,
+                books.page_count,
+                books.average_rating,
+                user_books.status,
+                user_books.updated_at
+            FROM user_books
+            JOIN books ON user_books.book_id = books.id
+            WHERE user_books.user_id = ?
+            ORDER BY user_books.updated_at DESC
+            LIMIT 6
+        ''', (session['user_id'],)).fetchall()]
 
-        conn.close()
-        return render_template('index.html',
-                             user_books=user_books,
-                             popular_books=popular_books,
-                             recent_books=recent_books)
-    return render_template('index.html')
+
+    popular_books = [dict(row) for row in conn.execute('''
+        SELECT 
+            b.id,
+            b.title,
+            b.author,
+            b.genre,
+            b.description,
+            b.page_count,
+            b.average_rating,
+            COUNT(l.id) AS like_count
+        FROM books b
+        LEFT JOIN likes l ON b.id = l.book_id
+        GROUP BY b.id
+        ORDER BY like_count DESC
+        LIMIT 5
+    ''').fetchall()]
+
+
+    recent_books = [dict(row) for row in conn.execute('''
+        SELECT
+            id,
+            title,
+            author,
+            genre,
+            description,
+            page_count,
+            average_rating,
+            created_at
+        FROM books
+        ORDER BY created_at DESC
+        LIMIT 5
+    ''').fetchall()]
+
+
+    conn.close()
+
+    return render_template(
+        'index.html',
+        user_books=user_books,
+        popular_books=popular_books,
+        recent_books=recent_books
+    )
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
