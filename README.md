@@ -2,13 +2,15 @@
 
 A web application for readers to discover, organize, and track their reading journey. Users can manage their personal library, review books, rate titles, and connect with other readers.
 
+---
+
 ## Current Features
 
 * Users can create an account and log in to the application.
 * Users can add, edit, and delete books.
 * Users can view all books that have been added to the application.
 * Users can search for books by title, author, ISBN, genre, or other keywords.
-* The application provides user profile pages showing reading statistics, book collections, and social information.
+* The application provides user profile pages showing social statistics and book collections.
 * Users can assign a genre to each book to classify and organize books in the system.
 * Users can add additional information to books through ratings and reviews, which are visible to other users.
 * Users can track their reading progress using the statuses:
@@ -28,19 +30,6 @@ A web application for readers to discover, organize, and track their reading jou
 * Flask
 * SQLite
 * HTML/CSS
-
----
-
-## Database
-
-The application uses SQLite for local development.
-
-Initialize the database:
-
-```bash
-sqlite3 database.db < schema.sql
-sqlite3 database.db < init.sql
-```
 
 ---
 
