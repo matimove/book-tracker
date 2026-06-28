@@ -33,7 +33,6 @@ def index():
     if 'user_id' in session:
         conn = get_db_connection()
         
-        #user_books = [dict(row) for row in conn.execute('SELECT * FROM user_books WHERE user_id = ?', (session['user_id'],)).fetchall()]
         user_books = [dict(row) for row in conn.execute('''
     SELECT
         books.id AS book_id,
@@ -52,10 +51,40 @@ def index():
     ORDER BY user_books.updated_at DESC
     LIMIT 6
 ''', (session['user_id'],)).fetchall()]
-        popular_books = [dict(row) for row in conn.execute('SELECT b.*, COUNT(l.id) as like_count FROM books b LEFT JOIN likes l ON b.id = l.book_id GROUP BY b.id ORDER BY like_count DESC LIMIT 5').fetchall()]
-        recent_books = [dict(row) for row in conn.execute('SELECT * FROM books ORDER BY created_at DESC LIMIT 5').fetchall()]
+        
+        popular_books = [dict(row) for row in conn.execute('''
+            SELECT 
+                b.id,
+                b.title,
+                b.author,
+                b.genre,
+                b.description,
+                b.cover_image,
+                b.page_count,
+                b.average_rating,
+                COUNT(l.id) AS like_count
+            FROM books b
+            LEFT JOIN likes l ON b.id = l.book_id
+            GROUP BY b.id
+            ORDER BY like_count DESC
+            LIMIT 5
+        ''').fetchall()]
 
-
+        recent_books = [dict(row) for row in conn.execute('''
+            SELECT
+                id,
+                title,
+                author,
+                genre,
+                description,
+                cover_image,
+                page_count,
+                average_rating,
+                created_at
+            FROM books
+            ORDER BY created_at DESC
+            LIMIT 5
+        ''').fetchall()]
 
         conn.close()
         return render_template('index.html',
@@ -100,7 +129,12 @@ def login():
 
         conn = get_db_connection()
         user = conn.execute('''
-            SELECT * FROM users WHERE username = ?
+            SELECT
+                id,
+                username,
+                password_hash
+            FROM users
+            WHERE username = ?
         ''', (username,)).fetchone()
         conn.close()
 
@@ -131,49 +165,83 @@ def logout():
 @app.route('/profile/<username>')
 def profile(username):
     conn = get_db_connection()
+
     user = conn.execute('''
-        SELECT * FROM users WHERE username = ?
+        SELECT
+            id,
+            username,
+            bio,
+            profile_picture
+        FROM users
+        WHERE username = ?
     ''', (username,)).fetchone()
 
     if not user:
         flash('User not found!', 'error')
         return redirect(url_for('index'))
 
-    # Get user's books by status
-    want_to_read = conn.execute('''
-        SELECT b.* FROM user_books ub
+    book_columns = '''
+        b.id,
+        b.title,
+        b.author,
+        b.genre,
+        b.description,
+        b.cover_image,
+        b.page_count,
+        b.average_rating,
+        b.created_at
+    '''
+
+    want_to_read = conn.execute(f'''
+        SELECT {book_columns}
+        FROM user_books ub
         JOIN books b ON ub.book_id = b.id
         WHERE ub.user_id = ? AND ub.status = 'want_to_read'
     ''', (user['id'],)).fetchall()
 
-    currently_reading = conn.execute('''
-        SELECT b.* FROM user_books ub
+    currently_reading = conn.execute(f'''
+        SELECT {book_columns}
+        FROM user_books ub
         JOIN books b ON ub.book_id = b.id
         WHERE ub.user_id = ? AND ub.status = 'currently_reading'
     ''', (user['id'],)).fetchall()
 
-    read = conn.execute('''
-        SELECT b.* FROM user_books ub
+    read = conn.execute(f'''
+        SELECT {book_columns}
+        FROM user_books ub
         JOIN books b ON ub.book_id = b.id
         WHERE ub.user_id = ? AND ub.status = 'read'
     ''', (user['id'],)).fetchall()
 
-        # Get books added by this user
+
     added_books = conn.execute('''
-        SELECT *
+        SELECT
+            id,
+            title,
+            author,
+            genre,
+            description,
+            cover_image,
+            page_count,
+            average_rating,
+            created_at
         FROM books
         WHERE created_by = ?
         ORDER BY created_at DESC
     ''', (user['id'],)).fetchall()
 
-    # Check if current user is following this profile
+
     is_following = False
     if 'user_id' in session and session['user_id'] != user['id']:
         follow = conn.execute('''
-            SELECT * FROM follows
-            WHERE follower_id = ? AND following_id = ?
+            SELECT id
+            FROM follows
+            WHERE follower_id = ? 
+            AND following_id = ?
         ''', (session['user_id'], user['id'])).fetchone()
+
         is_following = follow is not None
+
 
     follows_count = conn.execute('''
         SELECT COUNT(*) AS count
@@ -181,11 +249,13 @@ def profile(username):
         WHERE follower_id = ?
     ''', (user['id'],)).fetchone()['count']
 
+
     followers_count = conn.execute('''
         SELECT COUNT(*) AS count
         FROM follows
         WHERE following_id = ?
     ''', (user['id'],)).fetchone()['count']
+
 
     conn.close()
 
@@ -195,10 +265,10 @@ def profile(username):
         want_to_read=want_to_read,
         currently_reading=currently_reading,
         read=read,
+        added_books=added_books,
         is_following=is_following,
         follows_count=follows_count,
-        followers_count=followers_count,
-        added_books=added_books
+        followers_count=followers_count
     )
 
 @app.route('/follow/<username>', methods=['POST'])
@@ -265,10 +335,15 @@ def following(username):
 
     conn = get_db_connection()
 
-    user = conn.execute(
-        'SELECT * FROM users WHERE username = ?',
-        (username,)
-    ).fetchone()
+    user = conn.execute('''
+        SELECT
+            id,
+            username,
+            bio,
+            profile_picture
+        FROM users
+        WHERE username = ?
+    ''', (username,)).fetchone()
 
     if not user:
         conn.close()
@@ -277,9 +352,13 @@ def following(username):
 
 
     following_users = conn.execute('''
-        SELECT users.*
+        SELECT
+            users.id,
+            users.username,
+            users.bio,
+            users.profile_picture
         FROM follows
-        JOIN users 
+        JOIN users
         ON follows.following_id = users.id
         WHERE follows.follower_id = ?
         ORDER BY users.username
@@ -301,10 +380,15 @@ def followers(username):
 
     conn = get_db_connection()
 
-    user = conn.execute(
-        'SELECT * FROM users WHERE username = ?',
-        (username,)
-    ).fetchone()
+    user = conn.execute('''
+        SELECT
+            id,
+            username,
+            bio,
+            profile_picture
+        FROM users
+        WHERE username = ?
+    ''', (username,)).fetchone()
 
 
     if not user:
@@ -314,7 +398,11 @@ def followers(username):
 
 
     follower_users = conn.execute('''
-        SELECT users.*
+        SELECT
+            users.id,
+            users.username,
+            users.bio,
+            users.profile_picture
         FROM follows
         JOIN users
         ON follows.follower_id = users.id
@@ -336,7 +424,20 @@ def followers(username):
 def book_detail(book_id):
     conn = get_db_connection()
     book = conn.execute('''
-    SELECT b.*, u.username AS added_by_username
+    SELECT 
+        b.id,
+        b.title,
+        b.author,
+        b.isbn,
+        b.genre,
+        b.description,
+        b.cover_image,
+        b.published_date,
+        b.page_count,
+        b.average_rating,
+        b.created_by,
+        b.created_at,
+        u.username AS added_by_username
     FROM books b
     LEFT JOIN users u ON b.created_by = u.id
     WHERE b.id = ?
@@ -350,7 +451,18 @@ def book_detail(book_id):
     user_status = None
     if 'user_id' in session:
         user_book = conn.execute('''
-            SELECT * FROM user_books
+            SELECT 
+                id,
+                user_id,
+                book_id,
+                status,
+                rating,
+                review,
+                start_date,
+                finish_date,
+                created_at,
+                updated_at
+            FROM user_books
             WHERE user_id = ? AND book_id = ?
         ''', (session['user_id'], book_id)).fetchone()
         if user_book:
@@ -365,17 +477,28 @@ def book_detail(book_id):
     user_liked = False
     if 'user_id' in session:
         like = conn.execute('''
-            SELECT * FROM likes
+            SELECT id
+            FROM likes
             WHERE user_id = ? AND book_id = ?
         ''', (session['user_id'], book_id)).fetchone()
         user_liked = like is not None
 
     # Get reviews
     reviews = conn.execute('''
-        SELECT ub.*, u.username, u.profile_picture
+        SELECT
+            ub.id,
+            ub.user_id,
+            ub.book_id,
+            ub.status,
+            ub.rating,
+            ub.review,
+            ub.updated_at,
+            u.username,
+            u.profile_picture
         FROM user_books ub
         JOIN users u ON ub.user_id = u.id
-        WHERE ub.book_id = ? AND ub.review IS NOT NULL
+        WHERE ub.book_id = ?
+        AND ub.review IS NOT NULL
         ORDER BY ub.updated_at DESC
     ''', (book_id,)).fetchall()
 
@@ -530,9 +653,25 @@ def edit_book(book_id):
     conn = get_db_connection()
 
     book = conn.execute(
-        'SELECT * FROM books WHERE id = ?',
-        (book_id,)
-    ).fetchone()
+            '''
+            SELECT
+                id,
+                title,
+                author,
+                isbn,
+                genre,
+                description,
+                cover_image,
+                published_date,
+                page_count,
+                average_rating,
+                created_by,
+                created_at
+            FROM books
+            WHERE id = ?
+            ''',
+            (book_id,)
+        ).fetchone()
 
     if not book:
         conn.close()
@@ -685,9 +824,22 @@ def edit_book(book_id):
 def delete_book(book_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     check_csrf()
+
     conn = get_db_connection()
-    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+
+    book = conn.execute(
+        '''
+        SELECT 
+            id,
+            title,
+            created_by
+        FROM books
+        WHERE id = ?
+        ''',
+        (book_id,)
+    ).fetchone()
 
     if not book:
         conn.close()
@@ -697,13 +849,20 @@ def delete_book(book_id):
     if book['created_by'] != session['user_id']:
         conn.close()
         flash('You can only delete books you added.', 'error')
-        return redirect(url_for('book_detail', book_id=book_id))
+        return redirect(
+            url_for('book_detail', book_id=book_id)
+        )
 
-    conn.execute('DELETE FROM books WHERE id = ?', (book_id,))
+    conn.execute(
+        'DELETE FROM books WHERE id = ?',
+        (book_id,)
+    )
+
     conn.commit()
     conn.close()
 
     flash('Book deleted successfully!', 'success')
+
     return redirect(url_for('index'))
 
 @app.route('/confirm_delete/<int:book_id>')
@@ -714,7 +873,14 @@ def confirm_delete(book_id):
     conn = get_db_connection()
 
     book = conn.execute(
-        'SELECT * FROM books WHERE id = ?',
+        '''
+        SELECT
+            id,
+            title,
+            created_by
+        FROM books
+        WHERE id = ?
+        ''',
         (book_id,)
     ).fetchone()
 
@@ -735,14 +901,27 @@ def confirm_delete(book_id):
 
 @app.route('/search')
 def search():
-    query = request.args.get('q', '')
+    query = request.args.get('q', '').strip()
 
     conn = get_db_connection()
 
     books = []
+
     if query:
         books = conn.execute('''
-            SELECT *
+            SELECT
+                id,
+                title,
+                author,
+                isbn,
+                genre,
+                description,
+                cover_image,
+                published_date,
+                page_count,
+                average_rating,
+                created_by,
+                created_at
             FROM books
             WHERE title LIKE ?
                OR author LIKE ?
@@ -770,69 +949,168 @@ def add_to_collection(book_id):
     if 'user_id' not in session:
         flash('Please log in to add books to your collection.', 'error')
         return redirect(url_for('login'))
+
     check_csrf()
+
     conn = get_db_connection()
 
-    user_book = conn.execute('''
-        SELECT * FROM user_books
-        WHERE user_id = ? AND book_id = ?
-    ''', (session['user_id'], book_id)).fetchone()
+    # Check book exists
+    book = conn.execute('''
+        SELECT id
+        FROM books
+        WHERE id = ?
+    ''', (book_id,)).fetchone()
 
-    status = request.form.get('status')
-    rating = request.form.get('rating')
-    review = request.form.get('review')
-    start_date = request.form.get('start_date')
-    finish_date = request.form.get('finish_date')
+    if not book:
+        conn.close()
+        flash('Book not found!', 'error')
+        return redirect(url_for('index'))
+
+
+    user_book = conn.execute('''
+        SELECT 
+            id,
+            status,
+            rating,
+            review,
+            start_date,
+            finish_date
+        FROM user_books
+        WHERE user_id = ?
+        AND book_id = ?
+    ''', (
+        session['user_id'],
+        book_id
+    )).fetchone()
+
+
+    # Clean inputs
+    status = request.form.get('status', '').strip()
+    rating = request.form.get('rating', '').strip()
+    review = request.form.get('review', '').strip()
+    start_date = request.form.get('start_date', '').strip()
+    finish_date = request.form.get('finish_date', '').strip()
+
+
+    # Status validation
+    allowed_statuses = [
+        'want_to_read',
+        'currently_reading',
+        'read'
+    ]
+
+    if status and status not in allowed_statuses:
+        conn.close()
+        flash('Invalid reading status!', 'error')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+
+    # Rating validation
+    if rating:
+        try:
+            rating = float(rating)
+
+            if rating < 0 or rating > 5:
+                raise ValueError
+
+        except ValueError:
+            conn.close()
+            flash('Rating must be between 0 and 5!', 'error')
+            return redirect(url_for('book_detail', book_id=book_id))
+    else:
+        rating = None
+
+
+    # Review length
+    if len(review) > 2000:
+        conn.close()
+        flash('Review is too long!', 'error')
+        return redirect(url_for('book_detail', book_id=book_id))
+
 
     if user_book:
+
         status = status or user_book['status']
-        rating = rating or user_book['rating']
-        review = review if review is not None else user_book['review']
+        rating = rating if rating is not None else user_book['rating']
+        review = review if review else user_book['review']
         start_date = start_date or user_book['start_date']
         finish_date = finish_date or user_book['finish_date']
-    else:
-        if not status:
-            flash('Please choose a reading status first.', 'error')
-            conn.close()
-            return redirect(url_for('book_detail', book_id=book_id))
 
-    try:
-        if user_book:
-            conn.execute('''
-                UPDATE user_books
-                SET status = ?, rating = ?, review = ?,
-                    start_date = ?, finish_date = ?, updated_at = CURRENT_TIMESTAMP
-                WHERE id = ?
-            ''', (status, rating, review, start_date, finish_date, user_book['id']))
-        else:
-            conn.execute('''
-                INSERT INTO user_books
-                (user_id, book_id, status, rating, review, start_date, finish_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (session['user_id'], book_id, status, rating, review, start_date, finish_date))
 
         conn.execute('''
-            UPDATE books
-            SET average_rating = COALESCE((
-                SELECT ROUND(AVG(rating), 2)
-                FROM user_books
-                WHERE book_id = ?
-                AND rating IS NOT NULL
-            ), 0.0)
+            UPDATE user_books
+            SET status = ?,
+                rating = ?,
+                review = ?,
+                start_date = ?,
+                finish_date = ?,
+                updated_at = DATE('now')
             WHERE id = ?
-        ''', (book_id, book_id))
+        ''', (
+            status,
+            rating,
+            review,
+            start_date or None,
+            finish_date or None,
+            user_book['id']
+        ))
 
-        conn.commit()
-        flash('Book entry updated successfully!', 'success')
+    else:
 
-    except Exception as e:
-        conn.rollback()
-        flash(f'Error adding book to collection: {e}', 'error')
+        if not status:
+            conn.close()
+            flash('Please choose a reading status first.', 'error')
+            return redirect(url_for('book_detail', book_id=book_id))
 
-    finally:
-        conn.close()
 
-    return redirect(url_for('book_detail', book_id=book_id))
+        conn.execute('''
+            INSERT INTO user_books
+            (
+                user_id,
+                book_id,
+                status,
+                rating,
+                review,
+                start_date,
+                finish_date
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            session['user_id'],
+            book_id,
+            status,
+            rating,
+            review or None,
+            start_date or None,
+            finish_date or None
+        ))
+
+
+    # Update average rating
+    conn.execute('''
+        UPDATE books
+        SET average_rating = COALESCE((
+            SELECT ROUND(AVG(rating), 2)
+            FROM user_books
+            WHERE book_id = ?
+            AND rating IS NOT NULL
+        ), 0.0)
+        WHERE id = ?
+    ''', (
+        book_id,
+        book_id
+    ))
+
+
+    conn.commit()
+    conn.close()
+
+    flash('Book entry updated successfully!', 'success')
+
+    return redirect(
+        url_for('book_detail', book_id=book_id)
+    )
+
 
 @app.route('/like/<int:book_id>', methods=['POST'])
 def like_book(book_id):
@@ -858,14 +1136,31 @@ def like_book(book_id):
 @app.route('/books')
 def all_books():
     conn = get_db_connection()
+
     books = conn.execute('''
-        SELECT *
+        SELECT
+            id,
+            title,
+            author,
+            isbn,
+            genre,
+            description,
+            cover_image,
+            published_date,
+            page_count,
+            average_rating,
+            created_by,
+            created_at
         FROM books
         ORDER BY title
     ''').fetchall()
+
     conn.close()
 
-    return render_template('all_books.html', books=books)
+    return render_template(
+        'all_books.html',
+        books=books
+    )
 
 @app.route('/unlike/<int:book_id>', methods=['POST'])
 def unlike_book(book_id):
@@ -892,43 +1187,76 @@ def my_books():
 
     conn = get_db_connection()
 
-    # Get books by status
-    want_to_read = conn.execute('''
-        SELECT b.* FROM user_books ub
+    book_columns = '''
+        b.id,
+        b.title,
+        b.author,
+        b.isbn,
+        b.genre,
+        b.description,
+        b.cover_image,
+        b.published_date,
+        b.page_count,
+        b.average_rating,
+        b.created_by,
+        b.created_at
+    '''
+
+    want_to_read = conn.execute(f'''
+        SELECT {book_columns}
+        FROM user_books ub
         JOIN books b ON ub.book_id = b.id
-        WHERE ub.user_id = ? AND ub.status = 'want_to_read'
+        WHERE ub.user_id = ?
+        AND ub.status = 'want_to_read'
     ''', (session['user_id'],)).fetchall()
 
-    currently_reading = conn.execute('''
-        SELECT b.* FROM user_books ub
+
+    currently_reading = conn.execute(f'''
+        SELECT {book_columns}
+        FROM user_books ub
         JOIN books b ON ub.book_id = b.id
-        WHERE ub.user_id = ? AND ub.status = 'currently_reading'
+        WHERE ub.user_id = ?
+        AND ub.status = 'currently_reading'
     ''', (session['user_id'],)).fetchall()
 
-    read = conn.execute('''
-        SELECT b.* FROM user_books ub
+
+    read = conn.execute(f'''
+        SELECT {book_columns}
+        FROM user_books ub
         JOIN books b ON ub.book_id = b.id
-        WHERE ub.user_id = ? AND ub.status = 'read'
+        WHERE ub.user_id = ?
+        AND ub.status = 'read'
     ''', (session['user_id'],)).fetchall()
 
-    # Get user's ratings for read books
+
     user_book_ratings = {}
+
     for book in read:
         rating = conn.execute('''
-            SELECT rating FROM user_books
-            WHERE user_id = ? AND book_id = ?
-        ''', (session['user_id'], book['id'])).fetchone()
+            SELECT rating
+            FROM user_books
+            WHERE user_id = ?
+            AND book_id = ?
+        ''', (
+            session['user_id'],
+            book['id']
+        )).fetchone()
+
         if rating:
-            user_book_ratings[book['id']] = {'rating': rating['rating']}
+            user_book_ratings[book['id']] = {
+                'rating': rating['rating']
+            }
+
 
     conn.close()
 
-    return render_template('user_books.html',
-                         want_to_read=want_to_read,
-                         currently_reading=currently_reading,
-                         read=read,
-                         user_book_ratings=user_book_ratings)
-
+    return render_template(
+        'user_books.html',
+        want_to_read=want_to_read,
+        currently_reading=currently_reading,
+        read=read,
+        user_book_ratings=user_book_ratings
+    )
 
 if __name__ == '__main__':
     app.run(debug=True)
