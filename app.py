@@ -771,6 +771,12 @@ def edit_book(book_id):
 
                 if page_count <= 0:
                     raise ValueError
+                
+              
+                if page_count > 10000:
+                    raise ValueError
+                
+                
 
             except ValueError:
                 flash('Invalid page count!', 'error')
