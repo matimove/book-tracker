@@ -188,7 +188,7 @@ def profile(username):
             id,
             username,
         
-            profile_picture
+    
         FROM users
         WHERE username = ?
     ''', (username,)).fetchone()
@@ -357,7 +357,7 @@ def following(username):
             id,
             username,
         
-            profile_picture
+            
         FROM users
         WHERE username = ?
     ''', (username,)).fetchone()
@@ -373,7 +373,7 @@ def following(username):
             users.id,
             users.username,
             
-            users.profile_picture
+           
         FROM follows
         JOIN users
         ON follows.following_id = users.id
@@ -402,7 +402,7 @@ def followers(username):
             id,
             username,
          
-            profile_picture
+            
         FROM users
         WHERE username = ?
     ''', (username,)).fetchone()
@@ -419,7 +419,7 @@ def followers(username):
             users.id,
             users.username,
             
-            users.profile_picture
+        
         FROM follows
         JOIN users
         ON follows.follower_id = users.id
@@ -511,7 +511,7 @@ def book_detail(book_id):
             ub.review,
             ub.updated_at,
             u.username,
-            u.profile_picture
+            
         FROM user_books ub
         JOIN users u ON ub.user_id = u.id
         WHERE ub.book_id = ?
