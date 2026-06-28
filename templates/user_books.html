@@ -14,7 +14,7 @@
                     {% for book in want_to_read %}
                         <div class="book-card">
                             <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="{{ book['title'] }}">
+                               
                                 <h3>{{ book['title'] }}</h3>
                                 <p>{{ book['author'] }}</p>
                             </a>
@@ -40,7 +40,7 @@
                     {% for book in currently_reading %}
                         <div class="book-card">
                             <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="{{ book['title'] }}">
+                                
                                 <h3>{{ book['title'] }}</h3>
                                 <p>{{ book['author'] }}</p>
                             </a>
@@ -67,7 +67,7 @@
                     {% for book in read %}
                         <div class="book-card">
                             <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="{{ book['title'] }}">
+                                
                                 <h3>{{ book['title'] }}</h3>
                                 <p>{{ book['author'] }}</p>
                                 <div class="book-stats">

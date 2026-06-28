@@ -56,9 +56,6 @@ def index():
         recent_books = [dict(row) for row in conn.execute('SELECT * FROM books ORDER BY created_at DESC LIMIT 5').fetchall()]
 
 
-        print("User Books:", user_books)
-        print("Popular Books:", popular_books)
-        print("Recent Books:", recent_books)
 
         conn.close()
         return render_template('index.html',
@@ -161,6 +158,14 @@ def profile(username):
         WHERE ub.user_id = ? AND ub.status = 'read'
     ''', (user['id'],)).fetchall()
 
+        # Get books added by this user
+    added_books = conn.execute('''
+        SELECT *
+        FROM books
+        WHERE created_by = ?
+        ORDER BY created_at DESC
+    ''', (user['id'],)).fetchall()
+
     # Check if current user is following this profile
     is_following = False
     if 'user_id' in session and session['user_id'] != user['id']:
@@ -192,7 +197,8 @@ def profile(username):
         read=read,
         is_following=is_following,
         follows_count=follows_count,
-        followers_count=followers_count
+        followers_count=followers_count,
+        added_books=added_books
     )
 
 @app.route('/follow/<username>', methods=['POST'])
@@ -253,6 +259,78 @@ def unfollow(username):
 
     flash(f'You have unfollowed {username}.', 'success')
     return redirect(url_for('profile', username=username))
+
+@app.route('/profile/<username>/following')
+def following(username):
+
+    conn = get_db_connection()
+
+    user = conn.execute(
+        'SELECT * FROM users WHERE username = ?',
+        (username,)
+    ).fetchone()
+
+    if not user:
+        conn.close()
+        flash('User not found!', 'error')
+        return redirect(url_for('index'))
+
+
+    following_users = conn.execute('''
+        SELECT users.*
+        FROM follows
+        JOIN users 
+        ON follows.following_id = users.id
+        WHERE follows.follower_id = ?
+        ORDER BY users.username
+    ''', (user['id'],)).fetchall()
+
+
+    conn.close()
+
+    return render_template(
+        'following.html',
+        user=user,
+        users=following_users
+    )
+
+
+
+@app.route('/profile/<username>/followers')
+def followers(username):
+
+    conn = get_db_connection()
+
+    user = conn.execute(
+        'SELECT * FROM users WHERE username = ?',
+        (username,)
+    ).fetchone()
+
+
+    if not user:
+        conn.close()
+        flash('User not found!', 'error')
+        return redirect(url_for('index'))
+
+
+    follower_users = conn.execute('''
+        SELECT users.*
+        FROM follows
+        JOIN users
+        ON follows.follower_id = users.id
+        WHERE follows.following_id = ?
+        ORDER BY users.username
+    ''', (user['id'],)).fetchall()
+
+
+    conn.close()
+
+
+    return render_template(
+        'followers.html',
+        user=user,
+        users=follower_users
+    )
 
 @app.route('/book/<int:book_id>')
 def book_detail(book_id):
@@ -318,43 +396,122 @@ def add_book():
     if 'user_id' not in session:
         flash('Please log in to add books.', 'error')
         return redirect(url_for('login'))
+
     if request.method == "POST":
         check_csrf()
-    if request.method == 'POST':
-        title = request.form['title']
-        author = request.form['author']
-        genre = request.form.get('genre')
-        isbn = request.form.get('isbn')
-        description = request.form.get('description')
-        published_date = request.form.get('published_date')
-        page_count = request.form.get('page_count')
-        cover_image = request.form.get('cover_image')
+
+        title = request.form.get('title', '').strip()
+        author = request.form.get('author', '').strip()
+        genre = request.form.get('genre', '').strip()
+        isbn = request.form.get('isbn', '').strip()
+        description = request.form.get('description', '').strip()
+        published_date = request.form.get('published_date', '').strip()
+        page_count = request.form.get('page_count', '').strip()
+        cover_image = request.form.get('cover_image', '').strip()
+
+
+        # Required fields
+        if not title or not author:
+            flash('Title and author are required!', 'error')
+            return redirect(url_for('add_book'))
+
+        # Length checks
+        if len(title) > 200:
+            flash('Title is too long!', 'error')
+            return redirect(url_for('add_book'))
+
+        if len(author) > 200:
+            flash('Author is too long!', 'error')
+            return redirect(url_for('add_book'))
+
+        if len(description) > 2000:
+            flash('Description is too long!', 'error')
+            return redirect(url_for('add_book'))
+
+
+        # Genre check
+        allowed_genres = [
+            '',
+            'Fantasy',
+            'Science Fiction',
+            'Mystery',
+            'Thriller',
+            'Romance',
+            'Historical Fiction',
+            'Non-Fiction',
+            'Biography',
+            'Self-Help'
+        ]
+
+        if genre not in allowed_genres:
+            flash('Invalid genre!', 'error')
+            return redirect(url_for('add_book'))
+
+
+        # Page count check
+        if page_count:
+            try:
+                page_count = int(page_count)
+
+                if page_count <= 0:
+                    raise ValueError
+
+            except ValueError:
+                flash('Invalid page count!', 'error')
+                return redirect(url_for('add_book'))
+        else:
+            page_count = None
+
+
+        # Date check
+        if published_date:
+            try:
+                datetime.strptime(published_date, "%Y-%m-%d")
+            except ValueError:
+                flash('Date must be YYYY-MM-DD!', 'error')
+                return redirect(url_for('add_book'))
+
 
         conn = get_db_connection()
+
+        # Duplicate title + author check
+        existing = conn.execute('''
+            SELECT id FROM books
+            WHERE title = ? AND author = ?
+        ''', (title, author)).fetchone()
+
+        if existing:
+            conn.close()
+            flash('A book with this title and author already exists!', 'error')
+            return redirect(url_for('add_book'))
+
         try:
             conn.execute('''
-    INSERT INTO books (
-        title, author, isbn, genre,
-        description, cover_image,
-        published_date, page_count,
-        created_by
-    )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-''', (
-    title,
-    author,
-    isbn,
-    genre,
-    description,
-    cover_image,
-    published_date,
-    page_count,
-    session['user_id']
-))
+            INSERT INTO books (
+                title, author, isbn, genre,
+                description, cover_image,
+                published_date, page_count,
+                created_by
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (
+                title,
+                author,
+                isbn or None,
+                genre or None,
+                description or None,
+                cover_image or None,
+                published_date or None,
+                int(page_count) if page_count else None,
+                session['user_id']
+            ))
+
             conn.commit()
             flash('Book added successfully!', 'success')
+
         except sqlite3.IntegrityError:
-            flash('A book with this ISBN already exists!', 'error')
+            flash('The book already exists!', 'error')
+
         finally:
             conn.close()
 
@@ -366,10 +523,16 @@ def add_book():
 def edit_book(book_id):
     if 'user_id' not in session:
         return redirect(url_for('login'))
+
     if request.method == "POST":
         check_csrf()
+
     conn = get_db_connection()
-    book = conn.execute('SELECT * FROM books WHERE id = ?', (book_id,)).fetchone()
+
+    book = conn.execute(
+        'SELECT * FROM books WHERE id = ?',
+        (book_id,)
+    ).fetchone()
 
     if not book:
         conn.close()
@@ -381,28 +544,138 @@ def edit_book(book_id):
         flash('You can only edit books you added.', 'error')
         return redirect(url_for('book_detail', book_id=book_id))
 
+
     if request.method == 'POST':
+
+        # Clean inputs
+        title = request.form.get('title', '').strip()
+        author = request.form.get('author', '').strip()
+        genre = request.form.get('genre', '').strip()
+        isbn = request.form.get('isbn', '').strip()
+        description = request.form.get('description', '').strip()
+        cover_image = request.form.get('cover_image', '').strip()
+        published_date = request.form.get('published_date', '').strip()
+        page_count = request.form.get('page_count', '').strip()
+
+
+        # Required fields
+        if not title or not author:
+            flash('Title and author are required!', 'error')
+            conn.close()
+            return redirect(url_for('edit_book', book_id=book_id))
+
+
+        # Length checks
+        if len(title) > 200:
+            flash('Title is too long!', 'error')
+            conn.close()
+            return redirect(url_for('edit_book', book_id=book_id))
+
+        if len(author) > 200:
+            flash('Author is too long!', 'error')
+            conn.close()
+            return redirect(url_for('edit_book', book_id=book_id))
+
+        if len(description) > 2000:
+            flash('Description is too long!', 'error')
+            conn.close()
+            return redirect(url_for('edit_book', book_id=book_id))
+
+
+        # Genre validation
+        allowed_genres = [
+            '',
+            'Fantasy',
+            'Science Fiction',
+            'Mystery',
+            'Thriller',
+            'Romance',
+            'Historical Fiction',
+            'Non-Fiction',
+            'Biography',
+            'Self-Help'
+        ]
+
+        if genre not in allowed_genres:
+            flash('Invalid genre!', 'error')
+            conn.close()
+            return redirect(url_for('edit_book', book_id=book_id))
+
+
+        # Page count validation
+        if page_count:
+            try:
+                page_count = int(page_count)
+
+                if page_count <= 0:
+                    raise ValueError
+
+            except ValueError:
+                flash('Invalid page count!', 'error')
+                conn.close()
+                return redirect(url_for('edit_book', book_id=book_id))
+
+        else:
+            page_count = None
+
+
+        # Date validation
+        if published_date:
+            try:
+                datetime.strptime(
+                    published_date,
+                    "%Y-%m-%d"
+                )
+            except ValueError:
+                flash('Date must be YYYY-MM-DD!', 'error')
+                conn.close()
+                return redirect(url_for('edit_book', book_id=book_id))
+
+        # Duplicate title + author check (ignore current book)
+        existing = conn.execute('''
+            SELECT id FROM books
+            WHERE title = ?
+            AND author = ?
+            AND id != ?
+        ''', (title, author, book_id)).fetchone()
+
+        if existing:
+            conn.close()
+            flash('A book with this title and author already exists!', 'error')
+            return redirect(url_for('edit_book', book_id=book_id))
+                
+        # Update
         conn.execute('''
             UPDATE books
-            SET title = ?, author = ?, genre = ?, isbn = ?, description = ?,
-                cover_image = ?, published_date = ?, page_count = ?
+            SET title = ?,
+                author = ?,
+                genre = ?,
+                isbn = ?,
+                description = ?,
+                cover_image = ?,
+                published_date = ?,
+                page_count = ?
             WHERE id = ?
         ''', (
-            request.form['title'],
-            request.form['author'],
-            request.form.get('genre'),
-            request.form.get('isbn'),
-            request.form.get('description'),
-            request.form.get('cover_image'),
-            request.form.get('published_date'),
-            request.form.get('page_count'),
+            title,
+            author,
+            genre or None,
+            isbn or None,
+            description or None,
+            cover_image or None,
+            published_date or None,
+            page_count,
             book_id
         ))
 
         conn.commit()
         conn.close()
+
         flash('Book updated successfully!', 'success')
-        return redirect(url_for('book_detail', book_id=book_id))
+        return redirect(
+            url_for('book_detail', book_id=book_id)
+        )
+
 
     conn.close()
     return render_template('edit_book.html', book=book)
@@ -432,6 +705,33 @@ def delete_book(book_id):
 
     flash('Book deleted successfully!', 'success')
     return redirect(url_for('index'))
+
+@app.route('/confirm_delete/<int:book_id>')
+def confirm_delete(book_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    conn = get_db_connection()
+
+    book = conn.execute(
+        'SELECT * FROM books WHERE id = ?',
+        (book_id,)
+    ).fetchone()
+
+    conn.close()
+
+    if not book:
+        flash('Book not found!', 'error')
+        return redirect(url_for('index'))
+
+    if book['created_by'] != session['user_id']:
+        flash('You can only delete books you added.', 'error')
+        return redirect(url_for('book_detail', book_id=book_id))
+
+    return render_template(
+        'confirm_delete.html',
+        book=book
+    )
 
 @app.route('/search')
 def search():

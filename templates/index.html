@@ -28,7 +28,7 @@
                     {% for book in user_books %}
                         <div class="book-card">
                             <a href="{{ url_for('book_detail', book_id=book['book_id']) }}">
-                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="">
+                               
                                 <h3>{{ book['title'] }}</h3>
                                 <p class="book-author">by {{ book['author'] }}</p>
 
@@ -64,7 +64,7 @@
                     {% for book in popular_books %}
                         <div class="book-card">
                             <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="">
+                               
                                 <h3>{{ book['title'] }}</h3>
                                 <p class="book-author">by {{ book['author'] }}</p>
 
@@ -100,7 +100,7 @@
                     {% for book in recent_books %}
                         <div class="book-card">
                             <a href="{{ url_for('book_detail', book_id=book['id']) }}">
-                                <img src="{{ book['cover_image'] or 'https://via.placeholder.com/150x200' }}" alt="">
+                                
                                 <h3>{{ book['title'] }}</h3>
                                 <p class="book-author">by {{ book['author'] }}</p>
 

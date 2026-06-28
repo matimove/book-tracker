@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ user['username'] }} Following
+{% endblock %}
+
+
+{% block content %}
+
+<div class="section">
+
+<h1>{{ user['username'] }} is following</h1>
+
+
+<div class="book-grid">
+
+{% for person in users %}
+
+<div class="book-card">
+
+<a href="{{ url_for('profile', username=person['username']) }}">
+
+<h3>
+{{ person['username'] }}
+</h3>
+
+
+{% if person['bio'] %}
+<p>
+{{ person['bio'] }}
+</p>
+{% endif %}
+
+
+</a>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+
+{% if not users %}
+<p>No users yet.</p>
+{% endif %}
+
+
+</div>
+
+{% endblock %}

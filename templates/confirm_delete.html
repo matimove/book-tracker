@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Book{% endblock %}
+
+{% block content %}
+
+<div class="add-book-container">
+
+    <h1>Delete Book</h1>
+
+    <p>
+        Are you sure you want to delete:
+    </p>
+
+    <h2>{{ book['title'] }}</h2>
+
+    <p>
+        by {{ book['author'] }}
+    </p>
+
+
+    <form method="POST" action="{{ url_for('delete_book', book_id=book['id']) }}">
+
+        <input type="hidden" 
+               name="csrf_token" 
+               value="{{ session['csrf_token'] }}">
+
+
+        <button type="submit" class="btn btn-danger">
+            Yes, Delete
+        </button>
+
+
+        <a href="{{ url_for('book_detail', book_id=book['id']) }}"
+           class="btn btn-secondary">
+            Cancel
+        </a>
+
+    </form>
+
+</div>
+
+{% endblock %}
