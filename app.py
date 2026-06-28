@@ -186,7 +186,7 @@ def profile(username):
     user = conn.execute('''
         SELECT
             id,
-            username,
+            username
         
     
         FROM users
@@ -355,7 +355,7 @@ def following(username):
     user = conn.execute('''
         SELECT
             id,
-            username,
+            username
         
             
         FROM users
@@ -371,7 +371,7 @@ def following(username):
     following_users = conn.execute('''
         SELECT
             users.id,
-            users.username,
+            users.username
             
            
         FROM follows
@@ -510,7 +510,7 @@ def book_detail(book_id):
             ub.rating,
             ub.review,
             ub.updated_at,
-            u.username,
+            u.username
             
         FROM user_books ub
         JOIN users u ON ub.user_id = u.id
